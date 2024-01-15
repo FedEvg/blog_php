@@ -1,0 +1,12 @@
+{% extends 'base.twig' %}
+
+{% block body %}
+    <img src="https://dummyimage.com/900x400/ffc2ff/3c48f0.jpg" class="img-fluid" alt="...">
+    <div class="card-body">
+        <h5 class="card-title">{{ post.title|escape }}</h5>
+        <div class="card-text">
+            <span class="text-muted">JekaMars | {{ post.published|date("Y-m-d") }}</span>
+        </div>
+        <p class="card-text">{{ post.description|raw }}</p>
+    </div>
+{% endblock %}
