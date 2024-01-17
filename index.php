@@ -1,5 +1,6 @@
 <?php
 
+use DI\ContainerBuilder;
 use Jekamars\BlogPhp\PostMapper;
 use Jekamars\BlogPhp\Slim\TwigMiddleware;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -10,8 +11,15 @@ use Twig\Loader\FilesystemLoader;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$loader = new FilesystemLoader('templates');
-$view = new Environment($loader);
+//$loader = new FilesystemLoader('templates');
+//$view = new Environment($loader);
+
+$builder = new ContainerBuilder();
+$builder->addDefinitions('config/di.php');
+
+$container = $builder->build();
+
+AppFactory::setContainer($container);
 
 $config = include 'config/database.php';
 
@@ -30,6 +38,7 @@ try {
 
 $app = AppFactory::create();
 
+$view = $container->get(Environment::class);
 $app->add(new TwigMiddleware($view));
 
 $app->get('/', function (Request $request, Response $response) use ($view, $connection) {
