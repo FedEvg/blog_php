@@ -1,11 +1,12 @@
 <?php
 
+use Jekamars\BlogPhp\PostMapper;
+use Jekamars\BlogPhp\Slim\TwigMiddleware;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
-use Jekamars\BlogPhp\PostMapper;
 
 require __DIR__ . '/vendor/autoload.php';
 
@@ -27,17 +28,22 @@ try {
     die();
 }
 
-$postMapper = new PostMapper($connection);
-
 $app = AppFactory::create();
 
-$app->get('/', function (Request $request, Response $response, $args) use ($view) {
-    $body = $view->render('index.twig');
+$app->add(new TwigMiddleware($view));
+
+$app->get('/', function (Request $request, Response $response) use ($view, $connection) {
+    $postMapper = new PostMapper($connection);
+    $posts = $postMapper->getLatestPosts(4);
+
+    $body = $view->render('index.twig', [
+        'posts' => $posts,
+    ]);
     $response->getBody()->write($body);
     return $response;
 });
 
-$app->get('/about', function (Request $request, Response $response, $args) use ($view) {
+$app->get('/about', function (Request $request, Response $response) use ($view) {
     $body = $view->render('about.twig', [
         'name' => 'About',
     ]);
@@ -45,7 +51,30 @@ $app->get('/about', function (Request $request, Response $response, $args) use (
     return $response;
 });
 
-$app->get('/{url_key}', function (Request $request, Response $response, $args) use ($view, $postMapper) {
+$app->get('/blog[/{page}]', function (Request $request, Response $response, $args) use ($view, $connection) {
+    $postMapper = new PostMapper($connection);
+
+    $limit = 2;
+
+    $page = !empty($args['page']) ? $args['page'] : 2;
+
+    $posts = $postMapper->getPosts('DESC', $page, $limit);
+
+    $totalCount = $postMapper->getTotalCount();
+
+    $body = $view->render('blog.twig', [
+        'posts' => $posts,
+        'pagination' => [
+            'current' => $page,
+            'paging' => ceil($totalCount / $limit),
+        ],
+    ]);
+    $response->getBody()->write($body);
+    return $response;
+});
+
+$app->get('/{url_key}', function (Request $request, Response $response, $args) use ($view, $connection) {
+    $postMapper = new PostMapper($connection);
     $post = $postMapper->getByUrlKey((string)$args['url_key']);
 
     if (empty($post)) {
