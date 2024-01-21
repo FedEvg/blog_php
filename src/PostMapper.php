@@ -3,16 +3,17 @@
 namespace Jekamars\BlogPhp;
 
 use Exception;
-use PDO;
 
 class PostMapper
 {
+    private Database $database;
+
     /**
-     * @param PDO $connection
+     * @param Database $database
      */
-    public function __construct(private PDO $connection)
+    public function __construct(Database $database)
     {
-        $this->connection = $connection;
+        $this->database = $database;
     }
 
     /**
@@ -21,7 +22,7 @@ class PostMapper
      */
     public function getByUrlKey(string $urlKey): ?array
     {
-        $statement = $this->connection->prepare('SELECT * FROM post WHERE url_key = :url_key');
+        $statement = $this->database->getConnection()->prepare('SELECT * FROM post WHERE url_key = :url_key');
         $statement->execute([
             'url_key' => $urlKey,
         ]);
@@ -39,9 +40,9 @@ class PostMapper
         $start = ($page - 1) * $limit;
 
         if ($page != 0) {
-            $statement = $this->connection->prepare('SELECT * FROM post ORDER BY published ' . $sort . ' LIMIT ' . $start . ',' . $limit);
+            $statement = $this->database->getConnection()->prepare('SELECT * FROM post ORDER BY published ' . $sort . ' LIMIT ' . $start . ',' . $limit);
         } else {
-            $statement = $this->connection->prepare('SELECT * FROM post ORDER BY published ' . $sort);
+            $statement = $this->database->getConnection()->prepare('SELECT * FROM post ORDER BY published ' . $sort);
         }
 
         $statement->execute();
@@ -56,7 +57,7 @@ class PostMapper
 
     public function getTotalCount(): int
     {
-        $statement = $this->connection->prepare('SELECT count(id) as total FROM post');
+        $statement = $this->database->getConnection()->prepare('SELECT count(id) as total FROM post');
         $statement->execute();
         return (int)($statement->fetchColumn() ?? 0);
     }
